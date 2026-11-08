@@ -38,7 +38,7 @@ public class AuthManager {
     }
 
     public String hashPassword(String password, String salt) {
-        // TODO: SHA-256 (or PBKDF2WithHmacSHA256) of salt + password
+        // TODO: SHA-256 of salt + password
         return "";
     }
 
