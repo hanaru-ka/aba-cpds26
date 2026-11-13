@@ -20,18 +20,15 @@ public class Product {
     }
 
     public boolean isOutOfStock() {
-        // TODO: stock <= 0
-        return false;
+        return stock <= 0;
     }
 
     public boolean isLowStock(int threshold) {
-        // TODO: stock > 0 && stock <= threshold
-        return false;
+        return stock > 0 && stock <= threshold;
     }
 
     public double getFinalPrice() {
-        // TODO: price after discount
-        return price;
+        return price * (1 - discount);
     }
 
     public String getProductId() { return productId; }
