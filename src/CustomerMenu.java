@@ -1,3 +1,4 @@
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -7,17 +8,42 @@ public class CustomerMenu {
     private final User user;
     private final ProductCatalog catalog;
     private final RestockMonitor monitor;
+    private final Scanner in;
     private final Cart cart = new Cart();
     private final OrderHistory history = new OrderHistory();
 
-    public CustomerMenu(User user, ProductCatalog catalog, RestockMonitor monitor) {
+    public CustomerMenu(User user, ProductCatalog catalog,
+                        RestockMonitor monitor, Scanner in) {
         this.user = user;
         this.catalog = catalog;
         this.monitor = monitor;
+        this.in = in;
     }
 
     public void run() {
-        // TODO: menu loop until logout
+        while (true) {
+            System.out.println("\n=== CUSTOMER MENU ===");
+            System.out.println("Welcome, " + user.getUsername() + "!");
+            System.out.println("1. Browse Products by Category");
+            System.out.println("2. Logout");
+
+            System.out.print("Choose an option: ");
+
+            if (!in.hasNextLine()) {
+                return;
+            }
+
+            String choice = in.nextLine().trim();
+
+            if (choice.equals("1")) {
+                browseByCategory();
+            } else if (choice.equals("2")) {
+                System.out.println("Logging out...");
+                break;
+            } else {
+                System.out.println("Invalid option. Please try again.");
+            }
+        }
     }
 
     private void browseByCategory() {
@@ -42,8 +68,6 @@ public class CustomerMenu {
         for (int i = 0; i < categories.size(); i++) {
             System.out.println((i + 1) + ". " + categories.get(i));
         }
-
-        Scanner in = new Scanner(System.in);
 
         System.out.print("\nChoose a category: ");
         String choice = in.nextLine().trim();
@@ -76,7 +100,7 @@ public class CustomerMenu {
 
             if (product.isOutOfStock()) {
                 System.out.println("Status: Out of Stock");
-            } else if (product.isLowStock(RestockMonitor.LOW_STOCK_THRESHOLD)) {
+            } else if (monitor.isLowStock(product)) {
                 System.out.println("Status: Running Low");
             } else {
                 System.out.println("Status: Available");
@@ -84,7 +108,7 @@ public class CustomerMenu {
         }
     }
 
-    //to do toh
+    // Other customer functions will be implemented separately.
     private void searchProducts() { /* TODO: search by name or category */ }
     private void sortProducts() { /* TODO: sort by name, price, or stock */ }
     private void manageCart() { /* TODO: add, edit quantity, remove */ }
