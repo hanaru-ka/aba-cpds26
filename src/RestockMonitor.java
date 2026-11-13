@@ -13,17 +13,34 @@ public class RestockMonitor {
     }
 
     public void rebuild(List<Product> products) {
-        // TODO: insert products into the heap
+        heap.clear();
+
+        for (Product product : products) {
+            heap.insert(product);
+        }
     }
 
     /** Returns up to n products that most urgently need restocking. */
     public List<Product> getMostUrgent(int n) {
-        // TODO: extract n lowest-stock products, then reinsert them
-        return new ArrayList<>();
+        List<Product> urgentProducts = new ArrayList<>();
+        List<Product> temporary = new ArrayList<>();
+
+        for (int i = 0; i < n && !heap.isEmpty(); i++) {
+            Product product = heap.extractMin();
+
+            urgentProducts.add(product);
+            temporary.add(product);
+        }
+
+        for (Product product : temporary) {
+            heap.insert(product);
+        }
+
+        return urgentProducts;
     }
 
     public boolean isLowStock(Product product) {
-        // TODO: use LOW_STOCK_THRESHOLD
-        return false;
+        return product != null &&
+                product.isLowStock(LOW_STOCK_THRESHOLD);
     }
 }

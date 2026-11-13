@@ -11,24 +11,111 @@ public class MinHeap<T> {
     }
 
     public void insert(T item) {
-        // TODO: add at the end, then siftUp
+        if (size == heap.length) {
+            Object[] newHeap = new Object[heap.length * 2];
+
+            for (int i = 0; i < heap.length; i++) {
+                newHeap[i] = heap[i];
+            }
+
+            heap = newHeap;
+        }
+
+        heap[size] = item;
+        siftUp(size);
+        size++;
     }
 
     @SuppressWarnings("unchecked")
     public T extractMin() {
-        // TODO: remove root, move last to root, siftDown
-        return null;
+        if (isEmpty()) {
+            return null;
+        }
+
+        T min = (T) heap[0];
+
+        heap[0] = heap[size - 1];
+        heap[size - 1] = null;
+        size--;
+
+        if (size > 0) {
+            siftDown(0);
+        }
+
+        return min;
     }
 
     @SuppressWarnings("unchecked")
     public T peek() {
-        // TODO: return the root without removing it
-        return null;
+        if (isEmpty()) {
+            return null;
+        }
+
+        return (T) heap[0];
     }
 
-    private void siftUp(int index) { /* TODO */ }
-    private void siftDown(int index) { /* TODO */ }
+    @SuppressWarnings("unchecked")
+    private void siftUp(int index) {
+        while (index > 0) {
+            int parent = (index - 1) / 2;
 
-    public boolean isEmpty() { return size == 0; }
-    public int size() { return size; }
+            T childValue = (T) heap[index];
+            T parentValue = (T) heap[parent];
+
+            if (comparator.compare(childValue, parentValue) >= 0) {
+                break;
+            }
+
+            Object temp = heap[index];
+            heap[index] = heap[parent];
+            heap[parent] = temp;
+
+            index = parent;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void siftDown(int index) {
+        while (true) {
+            int left = (index * 2) + 1;
+            int right = (index * 2) + 2;
+            int smallest = index;
+
+            if (left < size &&
+                    comparator.compare((T) heap[left], (T) heap[smallest]) < 0) {
+                smallest = left;
+            }
+
+            if (right < size &&
+                    comparator.compare((T) heap[right], (T) heap[smallest]) < 0) {
+                smallest = right;
+            }
+
+            if (smallest == index) {
+                break;
+            }
+
+            Object temp = heap[index];
+            heap[index] = heap[smallest];
+            heap[smallest] = temp;
+
+            index = smallest;
+        }
+    }
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    public void clear() {
+        for (int i = 0; i < size; i++) {
+            heap[i] = null;
+        }
+
+        size = 0;
+    }
+
+    public int size() {
+        return size;
+    }
 }
