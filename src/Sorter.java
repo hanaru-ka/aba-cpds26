@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Team-written sorting (no Collections.sort). */
 public class Sorter {
 
     /** Stable merge sort, O(n log n). Returns a new sorted list. */
