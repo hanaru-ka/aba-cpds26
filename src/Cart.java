@@ -7,22 +7,32 @@ public class Cart {
     private final Map<String, CartItem> items = new LinkedHashMap<>();
 
     public void addItem(Product product, int quantity) {
-        // TODO: add or increase quantity; check stock
+        if (product == null || quantity <= 0) return;
+        CartItem existing = items.get(product.getProductId());
+        if (existing == null) {
+            items.put(product.getProductId(), new CartItem(product, quantity));
+        } else {
+            existing.setQuantity(existing.getQuantity() + quantity);
+        }
     }
 
     public boolean updateQuantity(String productId, int quantity) {
-        // TODO: edit quantity
-        return false;
+        CartItem item = items.get(productId);
+        if (item == null || quantity <= 0) return false;
+        item.setQuantity(quantity);
+        return true;
     }
 
     public boolean removeItem(String productId) {
-        // TODO: remove item
-        return false;
+        return items.remove(productId) != null;
     }
 
     public double getTotal() {
-        // TODO: sum of subtotals
-        return 0;
+        double total = 0;
+        for (CartItem item : items.values()) {
+            total += item.getSubtotal();
+        }
+        return total;
     }
 
     public void clear() { items.clear(); }

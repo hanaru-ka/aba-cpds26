@@ -30,7 +30,7 @@ public final class ConsoleUtil {
 
     /** Waits for Enter so the user can read a message before the screen is cleared. */
     public static void pause(Scanner in) {
-        System.out.print("Press Enter to continue...");
+        System.out.print("Press Enter to continue... ");
         if (in.hasNextLine()) in.nextLine();
     }
 }
