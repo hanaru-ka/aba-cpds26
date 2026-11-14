@@ -9,8 +9,7 @@ public class CartItem {
     }
 
     public double getSubtotal() {
-        // TODO: final price * quantity
-        return 0;
+        return product.getFinalPrice() * quantity;
     }
 
     public Product getProduct() { return product; }
