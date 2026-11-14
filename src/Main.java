@@ -41,7 +41,7 @@ public class Main {
                 if (user != null) {
                     ConsoleUtil.clear();
                     System.out.println("Welcome, " + user.getUsername() + "!");
-                    startSession(user, catalog, monitor);
+                    startSession(user, catalog, monitor, in);
                     monitor.rebuild(catalog.getAllProducts());
                     storage.saveProducts(catalog.getAllProducts());
                     storage.saveAccounts(auth.getAccounts());
@@ -110,11 +110,11 @@ public class Main {
         return false;
     }
 
-    private static void startSession(User user, ProductCatalog catalog, RestockMonitor monitor) {
+    private static void startSession(User user, ProductCatalog catalog, RestockMonitor monitor, Scanner in) {
         if (user instanceof Admin) {
             new AdminMenu(catalog, monitor).run();
         } else {
-            new CustomerMenu(user, catalog, monitor).run();
+            new CustomerMenu(user, catalog, monitor, in).run();
         }
     }
 

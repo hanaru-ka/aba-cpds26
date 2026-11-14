@@ -9,15 +9,31 @@ public class CustomerMenu {
     private final RestockMonitor monitor;
     private final Cart cart = new Cart();
     private final OrderHistory history = new OrderHistory();
+    private final Scanner in;
 
-    public CustomerMenu(User user, ProductCatalog catalog, RestockMonitor monitor) {
+    public CustomerMenu(User user, ProductCatalog catalog, RestockMonitor monitor, Scanner in) {
         this.user = user;
         this.catalog = catalog;
         this.monitor = monitor;
+        this.in = in;
     }
 
     public void run() {
-        // TODO: menu loop until logout
+        while (true) {
+            ConsoleUtil.clear();
+            System.out.println("=== Customer Menu (" + user.getUsername() + ") ===");
+            System.out.println("1. Browse by category");
+            System.out.println("0. Logout");
+            String choice = ask("Choose an option: ");
+            if (choice == null || choice.equals("0")) return;
+            if (choice.equals("1")) {
+                browseByCategory();
+                ConsoleUtil.pause(in);
+            } else {
+                System.out.println("Invalid option. Please enter 1 or 0.");
+                ConsoleUtil.pause(in);
+            }
+        }
     }
 
     private void browseByCategory() {
@@ -42,11 +58,8 @@ public class CustomerMenu {
         for (int i = 0; i < categories.size(); i++) {
             System.out.println((i + 1) + ". " + categories.get(i));
         }
-
-        Scanner in = new Scanner(System.in);
-
-        System.out.print("\nChoose a category: ");
-        String choice = in.nextLine().trim();
+        String choice = ask("\nChoose a category: ");
+        if (choice == null) return;
 
         int categoryNumber;
 
@@ -82,6 +95,11 @@ public class CustomerMenu {
                 System.out.println("Status: Available");
             }
         }
+    }
+
+    private String ask(String prompt) {
+        System.out.print(prompt);
+        return in.hasNextLine() ? in.nextLine().trim() : null;
     }
 
     //to do toh
