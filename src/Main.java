@@ -10,7 +10,6 @@ import java.util.Scanner;
  * */
 public class Main {
     public static void main(String[] args) {
-        // On Windows, IntelliJ's Run window cannot hide a password, so reopen in a real terminal window.
         if (relaunchInTerminalWindow(args)) {
             System.out.println("ABA-Mart opened in a new terminal window. Continue there.");
             return;
@@ -75,14 +74,13 @@ public class Main {
         if (AuthManager.isTerminal(System.console())) return false;
         try {
             String java = Paths.get(System.getProperty("java.home"), "bin", "java.exe").toString();
-            // The window title must contain a space so Java wraps it in quotes; otherwise "start" treats it as the program.
             new ProcessBuilder("cmd", "/c", "start", "ABA Mart", java,
                     "-cp", System.getProperty("java.class.path"), "Main", "--child")
                     .directory(new File(System.getProperty("user.dir")))
                     .start();
             return true;
         } catch (IOException e) {
-            return false;   // could not open a window: carry on in this console
+            return false;
         }
     }
 
