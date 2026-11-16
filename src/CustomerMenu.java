@@ -112,6 +112,7 @@ public class CustomerMenu {
 
     private void manageCart() {
         while (true) {
+            ConsoleUtil.clear();
             System.out.println("\n=== MY CART ===");
             printCart();
 
@@ -125,12 +126,16 @@ public class CustomerMenu {
 
             if (choice.equals("1")) {
                 addItemToCart();
+                ConsoleUtil.pause(in);
             } else if (choice.equals("2")) {
                 editCartQuantity();
+                ConsoleUtil.pause(in);
             } else if (choice.equals("3")) {
                 removeCartItem();
+                ConsoleUtil.pause(in);
             } else {
                 System.out.println("Invalid option.");
+                ConsoleUtil.pause(in);
             }
         }
     }
@@ -140,14 +145,23 @@ public class CustomerMenu {
             System.out.println("Your cart is empty.");
             return;
         }
+
+        System.out.printf("%-10s %-24s %8s %14s%n", "Product ID", "Product", "Quantity", "Subtotal");
+        System.out.println("-".repeat(59));
+
+        int totalQuantity = 0;
         for (CartItem item : cart.getItems()) {
             Product product = item.getProduct();
-            System.out.println("\nProduct ID: " + product.getProductId());
-            System.out.println("Product: " + product.getName());
-            System.out.println("Quantity: " + item.getQuantity());
-            System.out.printf("Subtotal: PHP %.2f%n", item.getSubtotal());
+            System.out.printf("%-10s %-24s %8d %14s%n",
+                    product.getProductId(), product.getName(), item.getQuantity(),
+                    String.format("PHP %.2f", item.getSubtotal()));
+            totalQuantity += item.getQuantity();
         }
-        System.out.printf("%nTotal: PHP %.2f%n", cart.getTotal());
+
+        System.out.println("-".repeat(59));
+        System.out.printf("%-10s %-24s %8d %14s%n", "", "", totalQuantity,
+                String.format("PHP %.2f", cart.getTotal()));
+
     }
 
     private void addItemToCart() {
