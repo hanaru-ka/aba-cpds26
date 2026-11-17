@@ -6,17 +6,31 @@ public class OrderHistory {
     private final MyStack<Order> orders = new MyStack<>();
 
     public void addOrder(Order order) {
-        // TODO: orders.push(order)
+        orders.push(order);
     }
 
     /** Returns orders most recent first. */
     public List<Order> getAllOrders() {
-        // TODO: read the stack from top to bottom
-        return new ArrayList<>();
+        List<Order> result = new ArrayList<>();
+        MyStack<Order> holding = new MyStack<>();
+
+        while (!orders.isEmpty()) {
+            Order order = orders.pop();
+            result.add(order);
+            holding.push(order);
+        }
+        while (!holding.isEmpty()) {
+            orders.push(holding.pop());
+        }
+        return result;
     }
 
     public Order findOrder(String orderId) {
-        // TODO: linear search by order ID
+        for (Order order : getAllOrders()) {
+            if (order.getOrderId().equals(orderId)) {
+                return order;
+            }
+        }
         return null;
     }
 }

@@ -20,8 +20,18 @@ public class Order {
     }
 
     public String generateReceipt() {
-        // TODO: build the receipt text
-        return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append("ABA-Mart Receipt\n");
+        sb.append("Order ID: ").append(orderId).append('\n');
+        sb.append("Customer: ").append(username).append('\n');
+        sb.append("Date: ").append(date).append('\n');
+        sb.append("Payment: ").append(paymentMode).append("\n\n");
+        for (CartItem item : items) {
+            sb.append(String.format("%-25s x%-3d %10.2f%n", item.getProduct().getName(),
+                    item.getQuantity(), item.getSubtotal()));
+        }
+        sb.append(String.format("%nTotal: %.2f%n", total));
+        return sb.toString();
     }
 
     public String getOrderId() { return orderId; }
