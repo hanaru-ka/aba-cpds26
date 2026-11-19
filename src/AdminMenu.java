@@ -73,13 +73,19 @@ public class AdminMenu {
         System.out.println("-".repeat(75));
 
         for (Product product : products) {
-            if (monitor.isLowStock(product)) {
+            if (product.isOutOfStock() || monitor.isLowStock(product)) {
+
+                String status = product.isOutOfStock()
+                        ? "Out of Stock"
+                        : "Running Low";
+
                 System.out.printf("%-10s %-24s %12s %8d  %s%n",
                         product.getProductId(),
                         product.getName(),
                         String.format("PHP %.2f", product.getFinalPrice()),
                         product.getStock(),
-                        "Running Low");
+                        status);
+
                 found = true;
             }
         }
