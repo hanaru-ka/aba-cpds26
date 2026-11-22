@@ -285,7 +285,8 @@ public class CustomerMenu {
 
     private void printAvailableProducts() {
         List<Product> products = Sorter.mergeSort(catalog.getAllProducts(),
-                Comparator.comparing(Product::getProductId));
+                Comparator.comparing((Product p) -> p.getCategory().toLowerCase())
+                        .thenComparing(Product::getProductId));
         boolean any = false;
         for (Product p : products) {
             if (!p.isOutOfStock()) { any = true; break; }
@@ -295,16 +296,24 @@ public class CustomerMenu {
             return;
         }
 
-        System.out.printf("%-10s %-24s %12s %8s  %s%n", "Product ID", "Product", "Price", "Stock", "Status");
-        System.out.println("-".repeat(70));
+        String currentCategory = null;
         for (Product p : products) {
             if (p.isOutOfStock()) continue;
+
+            if (currentCategory == null || !currentCategory.equalsIgnoreCase(p.getCategory())) {
+                currentCategory = p.getCategory();
+                System.out.println("\n" + currentCategory);
+                System.out.printf("%-10s %-24s %12s %8s  %s%n", "Product ID", "Product", "Price", "Stock", "Status");
+                System.out.println("-".repeat(70));
+            }
+
             String status = monitor.isLowStock(p) ? "Running Low" : "Available";
             System.out.printf("%-10s %-24s %12s %8d  %s%n",
                     p.getProductId(), p.getName(), String.format("PHP %.2f", p.getFinalPrice()),
                     p.getStock(), status);
         }
         System.out.println();
+
     }
 
     private List<CartItem> cartItemsSortedById() {
