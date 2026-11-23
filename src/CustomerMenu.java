@@ -465,11 +465,4 @@ public class CustomerMenu {
                 + (skipped > 0 ? "; skipped " + skipped + " item(s) no longer available." : "."));
     }
 
-
-
-
-    //to do toh
-    private void searchProducts() { /* TODO: search by name or category */ }
-    private void sortProducts() { /* TODO: sort by name, price, or stock */ }
-
 }
