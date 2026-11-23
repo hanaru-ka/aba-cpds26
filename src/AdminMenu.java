@@ -1,4 +1,3 @@
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -61,33 +60,33 @@ public class AdminMenu {
 
     private void showRestockAlerts() {
         ConsoleUtil.clear();
-        System.out.println("=== RESTOCK ALERTS ===");
+        System.out.println("=== RESTOCK ALERTS BY CATEGORY ===");
 
-        List<Product> products =
-                monitor.getMostUrgent(catalog.getAllProducts().size());
-
+        List<String> categories = getCategories();
         boolean found = false;
 
-        System.out.printf("%-10s %-24s %12s %8s  %s%n",
-                "Product ID", "Product", "Price", "Stock", "Status");
-        System.out.println("-".repeat(75));
+        if (categories.isEmpty()) {
+            System.out.println("No products available.");
+            return;
+        }
 
-        for (Product product : products) {
-            if (product.isOutOfStock() || monitor.isLowStock(product)) {
+        for (String category : categories) {
+            List<Product> products = catalog.getByCategory(category);
+            List<Product> alertProducts = new ArrayList<>();
 
-                String status = product.isOutOfStock()
-                        ? "Out of Stock"
-                        : "Running Low";
-
-                System.out.printf("%-10s %-24s %12s %8d  %s%n",
-                        product.getProductId(),
-                        product.getName(),
-                        String.format("PHP %.2f", product.getFinalPrice()),
-                        product.getStock(),
-                        status);
-
-                found = true;
+            for (Product product : products) {
+                if (product.isOutOfStock() || monitor.isLowStock(product)) {
+                    alertProducts.add(product);
+                }
             }
+
+            if (alertProducts.isEmpty()) {
+                continue;
+            }
+
+            found = true;
+            System.out.println("\n=== " + category.toUpperCase() + " ===");
+            printProductList(alertProducts);
         }
 
         if (!found) {
@@ -99,15 +98,9 @@ public class AdminMenu {
 
     private void checkStockBySection() {
         ConsoleUtil.clear();
-        System.out.println("=== STOCK BY SECTION ===");
+        System.out.println("=== STOCK BY CATEGORY ===");
 
-        List<String> categories = new ArrayList<>();
-
-        for (Product product : catalog.getAllProducts()) {
-            if (!categories.contains(product.getCategory())) {
-                categories.add(product.getCategory());
-            }
-        }
+        List<String> categories = getCategories();
 
         if (categories.isEmpty()) {
             System.out.println("No products available.");
@@ -118,14 +111,37 @@ public class AdminMenu {
             System.out.println((i + 1) + ". " + categories.get(i));
         }
 
-        int choice = readInt("Choose a section: ", 1, categories.size());
+        int choice = readInt("Choose a category: ", 1, categories.size());
 
         String selectedCategory = categories.get(choice - 1);
         List<Product> products = catalog.getByCategory(selectedCategory);
 
         System.out.println("\n=== " + selectedCategory.toUpperCase() + " ===");
-
         printProductList(products);
+    }
+
+    // ---------- Category Helper ----------
+
+    private List<String> getCategories() {
+        List<String> categories = new ArrayList<>();
+
+        for (Product product : catalog.getAllProducts()) {
+            boolean exists = false;
+
+            for (String category : categories) {
+                if (category.equalsIgnoreCase(product.getCategory())) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                categories.add(product.getCategory());
+            }
+        }
+
+        categories.sort(String.CASE_INSENSITIVE_ORDER);
+        return categories;
     }
 
     // ---------- Add Product ----------
@@ -134,10 +150,15 @@ public class AdminMenu {
         ConsoleUtil.clear();
 
         System.out.println("=== ADD PRODUCT ===");
-        System.out.println("\nCURRENT PRODUCT CATALOG");
+        String category = chooseCategoryForNewProduct();
 
-        // Display all existing products before adding a new one.
-        printProductList(catalog.getAllProducts());
+        if (category == null) {
+            System.out.println("No category selected. Product addition cancelled.");
+            return;
+        }
+
+        System.out.println("\n=== PRODUCTS IN " + category.toUpperCase() + " ===");
+        printProductList(catalog.getByCategory(category));
 
         System.out.println("\n=== NEW PRODUCT DETAILS ===");
 
@@ -149,7 +170,6 @@ public class AdminMenu {
         }
 
         String name = readRequired("Product Name: ");
-        String category = readRequired("Category: ");
         double price = readDouble("Price: ", 0);
         int stock = readInt("Stock: ", 0, Integer.MAX_VALUE);
         double discount = readDouble(
@@ -169,10 +189,9 @@ public class AdminMenu {
         catalog.addProduct(product);
         monitor.rebuild(catalog.getAllProducts());
 
-        System.out.println("\nProduct added successfully!");
-
-        System.out.println("\nUPDATED PRODUCT CATALOG");
-        printProductList(catalog.getAllProducts());
+        System.out.println("\nProduct added successfully to " + category + "!");
+        System.out.println("\nUPDATED " + category.toUpperCase() + " CATEGORY");
+        printProductList(catalog.getByCategory(category));
     }
 
     // ---------- Edit Product ----------
@@ -180,19 +199,19 @@ public class AdminMenu {
     private void editProduct() {
         ConsoleUtil.clear();
 
-        System.out.println("=== EDIT PRODUCT ===");
-        printProductList(catalog.getAllProducts());
+        System.out.println("=== EDIT PRODUCT BY CATEGORY ===");
+        String category = chooseExistingCategory();
 
-        String id = ask("\nEnter Product ID to edit: ");
-
-        if (id == null || id.isEmpty()) {
+        if (category == null) {
             return;
         }
 
-        Product product = catalog.getProduct(id.toUpperCase());
+        List<Product> products = catalog.getByCategory(category);
+        System.out.println("\n=== " + category.toUpperCase() + " ===");
+        printProductList(products);
 
+        Product product = chooseProductFromCategory(products);
         if (product == null) {
-            System.out.println("Product not found.");
             return;
         }
 
@@ -202,9 +221,7 @@ public class AdminMenu {
         System.out.println("\nPress Enter to keep the current value.");
 
         String name = ask("New Name [" + product.getName() + "]: ");
-        String category = ask(
-                "New Category [" + product.getCategory() + "]: "
-        );
+        String newCategory = chooseCategoryForEdit(product.getCategory());
 
         double price = readDoubleOrKeep(
                 "New Price [" + product.getPrice() + "]: ",
@@ -227,14 +244,14 @@ public class AdminMenu {
         );
 
         // Remove the old catalog entry before changing its category or name.
-        catalog.removeProduct(id.toUpperCase());
+        catalog.removeProduct(product.getProductId());
 
         if (name != null && !name.isEmpty()) {
             product.setName(name);
         }
 
-        if (category != null && !category.isEmpty()) {
-            product.setCategory(category);
+        if (newCategory != null && !newCategory.isEmpty()) {
+            product.setCategory(newCategory);
         }
 
         product.setPrice(price);
@@ -249,6 +266,8 @@ public class AdminMenu {
         monitor.rebuild(catalog.getAllProducts());
 
         System.out.println("\nProduct updated successfully!");
+        System.out.println("\nUPDATED CATEGORY: " + product.getCategory().toUpperCase());
+        printProductList(catalog.getByCategory(product.getCategory()));
     }
 
     // ---------- Remove Product ----------
@@ -256,19 +275,19 @@ public class AdminMenu {
     private void removeProduct() {
         ConsoleUtil.clear();
 
-        System.out.println("=== REMOVE PRODUCT ===");
-        printProductList(catalog.getAllProducts());
+        System.out.println("=== REMOVE PRODUCT BY CATEGORY ===");
+        String category = chooseExistingCategory();
 
-        String id = ask("\nEnter Product ID to remove: ");
-
-        if (id == null || id.isEmpty()) {
+        if (category == null) {
             return;
         }
 
-        Product product = catalog.getProduct(id.toUpperCase());
+        List<Product> products = catalog.getByCategory(category);
+        System.out.println("\n=== " + category.toUpperCase() + " ===");
+        printProductList(products);
 
+        Product product = chooseProductFromCategory(products);
         if (product == null) {
-            System.out.println("Product not found.");
             return;
         }
 
@@ -280,13 +299,108 @@ public class AdminMenu {
         );
 
         if (confirmation != null && confirmation.equalsIgnoreCase("Y")) {
-            catalog.removeProduct(id.toUpperCase());
+            catalog.removeProduct(product.getProductId());
             monitor.rebuild(catalog.getAllProducts());
 
-            System.out.println("Product removed successfully!");
+            System.out.println("Product removed successfully from " + category + "!");
         } else {
             System.out.println("Product removal cancelled.");
         }
+    }
+
+    // ---------- Category and Product Selection ----------
+
+    private String chooseCategoryForNewProduct() {
+        List<String> categories = getCategories();
+
+        System.out.println("\n=== SELECT PRODUCT CATEGORY ===");
+        for (int i = 0; i < categories.size(); i++) {
+            System.out.println((i + 1) + ". " + categories.get(i));
+        }
+        System.out.println((categories.size() + 1) + ". Add New Category");
+        System.out.println("0. Cancel");
+
+        int choice = readInt("Choose a category: ", 0, categories.size() + 1);
+
+        if (choice == 0) {
+            return null;
+        }
+        if (choice == categories.size() + 1) {
+            return readRequired("New Category Name: ");
+        }
+        return categories.get(choice - 1);
+    }
+
+    private String chooseExistingCategory() {
+        List<String> categories = getCategories();
+
+        if (categories.isEmpty()) {
+            System.out.println("No categories available.");
+            return null;
+        }
+
+        for (int i = 0; i < categories.size(); i++) {
+            System.out.println((i + 1) + ". " + categories.get(i));
+        }
+        System.out.println("0. Cancel");
+
+        int choice = readInt("Choose a category: ", 0, categories.size());
+        if (choice == 0) {
+            return null;
+        }
+        return categories.get(choice - 1);
+    }
+
+    private String chooseCategoryForEdit(String currentCategory) {
+        List<String> categories = getCategories();
+
+        System.out.println("\nCurrent category: " + currentCategory);
+        System.out.println("Choose a new category, or press Enter to keep the current one:");
+        for (int i = 0; i < categories.size(); i++) {
+            System.out.println((i + 1) + ". " + categories.get(i));
+        }
+        System.out.println((categories.size() + 1) + ". Add New Category");
+
+        String input = ask("Category choice: ");
+        if (input == null || input.isEmpty()) {
+            return currentCategory;
+        }
+
+        try {
+            int choice = Integer.parseInt(input);
+            if (choice >= 1 && choice <= categories.size()) {
+                return categories.get(choice - 1);
+            }
+            if (choice == categories.size() + 1) {
+                return readRequired("New Category Name: ");
+            }
+        } catch (NumberFormatException e) {
+            // Keep current category if the input is invalid.
+        }
+
+        System.out.println("Invalid category choice. Keeping the current category.");
+        return currentCategory;
+    }
+
+    private Product chooseProductFromCategory(List<Product> products) {
+        if (products.isEmpty()) {
+            System.out.println("No products in this category.");
+            return null;
+        }
+
+        String id = ask("\nEnter Product ID (or press Enter to cancel): ");
+        if (id == null || id.isEmpty()) {
+            return null;
+        }
+
+        for (Product product : products) {
+            if (product.getProductId().equalsIgnoreCase(id)) {
+                return product;
+            }
+        }
+
+        System.out.println("Product not found in the selected category.");
+        return null;
     }
 
     // ---------- Product Display ----------
