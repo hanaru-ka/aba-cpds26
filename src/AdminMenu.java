@@ -1,18 +1,23 @@
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Comparator;
+import java.util.Map;
+import java.util.TreeMap;
 
 /** Admin main menu. */
 public class AdminMenu {
     private final ProductCatalog catalog;
     private final RestockMonitor monitor;
     private final Scanner in;
+    private final CsvStorage storage;
 
-    public AdminMenu(ProductCatalog catalog, RestockMonitor monitor, Scanner in) {
+    public AdminMenu(ProductCatalog catalog, RestockMonitor monitor, Scanner in, CsvStorage storage) {
         this.catalog = catalog;
         this.monitor = monitor;
         this.in = in;
+        this.storage = storage;
     }
 
     public void run() {
@@ -25,6 +30,7 @@ public class AdminMenu {
             System.out.println("3. Add Product");
             System.out.println("4. Edit Product");
             System.out.println("5. Remove Product");
+            System.out.println("6. View Sales Summary");
             System.out.println("0. Logout");
 
             String choice = ask("Choose an option: ");
@@ -48,6 +54,9 @@ public class AdminMenu {
                 ConsoleUtil.pause(in);
             } else if (choice.equals("5")) {
                 removeProduct();
+                ConsoleUtil.pause(in);
+            } else if (choice.equals("6")) {
+                showSalesSummary();
                 ConsoleUtil.pause(in);
             } else {
                 System.out.println("Invalid option. Please try again.");
@@ -118,6 +127,67 @@ public class AdminMenu {
 
         System.out.println("\n=== " + selectedCategory.toUpperCase() + " ===");
         printProductList(products);
+    }
+
+
+    // ---------- Sales Summary ----------
+
+    private void showSalesSummary() {
+        ConsoleUtil.clear();
+        System.out.println("=== SALES SUMMARY ===");
+
+        List<Order> orders = storage.loadOrders(catalog.getAllProducts());
+
+        if (orders.isEmpty()) {
+            System.out.println("No completed orders found.");
+            return;
+        }
+
+        double totalRevenue = 0;
+        int totalItemsSold = 0;
+        Map<String, Double> categoryRevenue = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Integer> categoryUnits = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, Integer> paymentCounts = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+        for (Order order : orders) {
+            totalRevenue += order.getTotal();
+            String payment = order.getPaymentMode();
+            paymentCounts.put(payment, paymentCounts.getOrDefault(payment, 0) + 1);
+
+            for (CartItem item : order.getItems()) {
+                Product product = item.getProduct();
+                int quantity = item.getQuantity();
+                String category = product.getCategory();
+                totalItemsSold += quantity;
+                categoryUnits.put(category, categoryUnits.getOrDefault(category, 0) + quantity);
+                categoryRevenue.put(category,
+                        categoryRevenue.getOrDefault(category, 0.0) + item.getSubtotal());
+            }
+        }
+
+        System.out.println("Total Completed Orders: " + orders.size());
+        System.out.printf("Total Revenue: PHP %.2f%n", totalRevenue);
+        System.out.println("Total Items Sold: " + totalItemsSold);
+
+        System.out.println("\n=== SALES BY CATEGORY ===");
+        if (categoryRevenue.isEmpty()) {
+            System.out.println("No item details available for category breakdown.");
+        } else {
+            System.out.printf("%-24s %12s %12s%n", "Category", "Units Sold", "Sales");
+            System.out.println("-".repeat(52));
+            for (String category : categoryRevenue.keySet()) {
+                System.out.printf("%-24s %12d %12s%n", category,
+                        categoryUnits.get(category),
+                        String.format("PHP %.2f", categoryRevenue.get(category)));
+            }
+        }
+
+        System.out.println("\n=== PAYMENT METHOD SUMMARY ===");
+        for (String payment : paymentCounts.keySet()) {
+            System.out.println(payment + ": " + paymentCounts.get(payment) + " order(s)");
+        }
+
+        System.out.println("\nNote: Category sales use the current product category and price because the saved order data stores product IDs and quantities, not historical item prices or categories.");
     }
 
     // ---------- Category Helper ----------

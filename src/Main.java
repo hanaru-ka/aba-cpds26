@@ -110,7 +110,7 @@ public class Main {
 
     private static void startSession(User user, ProductCatalog catalog, RestockMonitor monitor, Scanner in, CsvStorage storage) {
         if (user instanceof Admin) {
-            new AdminMenu(catalog, monitor, in).run();
+            new AdminMenu(catalog, monitor, in, storage).run();
         } else {
             new CustomerMenu(user, catalog, monitor, in, storage).run();
         }
