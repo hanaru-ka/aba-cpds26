@@ -80,17 +80,4 @@ public class Searcher {
 
         return results;
     }
-
-    public static List<Product> filterByCategory(List<Product> list, String category) {
-        List<Product> results = new ArrayList<>();
-        category = category.toLowerCase();
-
-        for (Product product : list) {
-            if (product.getCategory().equalsIgnoreCase(category)) {
-                results.add(product);
-            }
-        }
-
-        return results;
-    }
 }
