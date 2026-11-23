@@ -33,10 +33,11 @@ public class CustomerMenu {
             ConsoleUtil.clear();
             System.out.println("=== Customer Menu (" + user.getUsername() + ") ===");
             System.out.println("1. Browse by category");
-            System.out.println("2. My cart");
-            System.out.println("3. Checkout");
-            System.out.println("4. Order history");
-            System.out.println("5. Reorder");
+            System.out.println("2. Search products");
+            System.out.println("3. My cart");
+            System.out.println("4. Checkout");
+            System.out.println("5. Order history");
+            System.out.println("6. Reorder");
             System.out.println("0. Logout");
             String choice = ask("Choose an option: ");
             if (choice == null || choice.equals("0")) return;
@@ -45,20 +46,21 @@ public class CustomerMenu {
                 ConsoleUtil.pause(in);
             }
             else if (choice.equals("2")) {
+                searchProducts();
+            }
+            else if (choice.equals("3")) {
                 manageCart();
                 ConsoleUtil.pause(in);
             }
-
-
-            else if (choice.equals("3")) {
+            else if (choice.equals("4")) {
                 checkout();
                 ConsoleUtil.pause(in);
             }
-            else if (choice.equals("4")) {
+            else if (choice.equals("5")) {
                 viewOrderHistory();
                 ConsoleUtil.pause(in);
             }
-            else if (choice.equals("5")) {
+            else if (choice.equals("6")) {
                 reorder();
                 ConsoleUtil.pause(in);
             }
@@ -71,6 +73,14 @@ public class CustomerMenu {
     }
 
     private void browseByCategory() {
+        String selectedCategory = chooseCategory();
+        if (selectedCategory == null) return;
+
+        showCategoryProducts(selectedCategory, catalog.getByCategory(selectedCategory));
+    }
+
+    /** Lists the categories and returns the one the customer picks, or null if none was chosen. */
+    private String chooseCategory() {
         List<Product> products = catalog.getAllProducts();
         List<String> categories = new ArrayList<>();
 
@@ -84,7 +94,7 @@ public class CustomerMenu {
 
         if (categories.isEmpty()) {
             System.out.println("No products available.");
-            return;
+            return null;
         }
 
         System.out.println("\n=== PRODUCT CATEGORIES ===");
@@ -93,7 +103,7 @@ public class CustomerMenu {
             System.out.println((i + 1) + ". " + categories.get(i));
         }
         String choice = ask("\nChoose a category: ");
-        if (choice == null) return;
+        if (choice == null) return null;
 
         int categoryNumber;
 
@@ -101,34 +111,103 @@ public class CustomerMenu {
             categoryNumber = Integer.parseInt(choice);
         } catch (NumberFormatException e) {
             System.out.println("Invalid category selection.");
-            return;
+            return null;
         }
 
         if (categoryNumber < 1 || categoryNumber > categories.size()) {
             System.out.println("Invalid category selection.");
-            return;
+            return null;
         }
 
-        String selectedCategory = categories.get(categoryNumber - 1);
+        return categories.get(categoryNumber - 1);
+    }
 
-        List<Product> categoryProducts =
-                catalog.getByCategory(selectedCategory);
+    /** Prints the category heading and its product table. Returns false if there is nothing to show. */
+    private boolean showCategoryProducts(String category, List<Product> products) {
+        System.out.println("\n=== " + category.toUpperCase() + " ===");
 
-        System.out.println("\n=== " + selectedCategory.toUpperCase() + " ===");
+        if (products.isEmpty()) {
+            System.out.println("No products in this category.");
+            return false;
+        }
 
-        for (Product product : categoryProducts) {
-            System.out.println("\nProduct ID: " + product.getProductId());
-            System.out.println("Product: " + product.getName());
-            System.out.println("Price: PHP " + product.getFinalPrice());
-            System.out.println("Stock: " + product.getStock());
+        printProductTable(products);
+        return true;
+    }
 
+    private void printProductTable(List<Product> products) {
+        List<Product> sortedProducts = Sorter.mergeSort(
+                products, Comparator.comparing(Product::getProductId));
+
+        System.out.printf("%-10s %-24s %12s %8s  %s%n",
+                "Product ID", "Product", "Price", "Stock", "Status");
+        System.out.println("-".repeat(70));
+
+        for (Product product : sortedProducts) {
+            String status;
             if (product.isOutOfStock()) {
-                System.out.println("Status: Out of Stock");
-            } else if (product.isLowStock(RestockMonitor.LOW_STOCK_THRESHOLD)) {
-                System.out.println("Status: Running Low");
+                status = "Out of Stock";
+            } else if (monitor.isLowStock(product)) {
+                status = "Running Low";
             } else {
-                System.out.println("Status: Available");
+                status = "Available";
             }
+
+            System.out.printf("%-10s %-24s %12s %8d  %s%n",
+                    product.getProductId(), product.getName(),
+                    String.format("PHP %.2f", product.getFinalPrice()),
+                    product.getStock(), status);
+        }
+    }
+
+    // ---------- Quick Search ----------
+
+    /** Keeps prompting for keywords until the customer presses Enter. */
+    private void searchProducts() {
+        while (true) {
+            ConsoleUtil.clear();
+            System.out.println("=== SEARCH PRODUCTS ===");
+            System.out.println("Type one or more keywords (e.g. \"coffee\", \"canned tuna\", \"per kg\").");
+            String query = ask("Search (or press Enter to go back): ");
+            if (query == null || query.isEmpty()) return;
+
+            ConsoleUtil.clear();
+            System.out.println("=== SEARCH RESULTS FOR \"" + query + "\" ===");
+
+            List<Product> matches = Sorter.mergeSort(
+                    Searcher.linearSearchByKeywords(catalog.getAllProducts(), query),
+                    Comparator.comparing(Product::getProductId));
+            if (matches.isEmpty()) {
+                System.out.println("\nNo products matched your search.");
+            } else {
+                printSearchResults(matches);
+                addToCartFrom(matches, "\nProduct ID to add to cart (or press Enter to skip): ");
+            }
+            System.out.println();
+            ConsoleUtil.pause(in);
+        }
+    }
+
+    private void printSearchResults(List<Product> products) {
+        System.out.println(products.size() + " product(s) found.\n");
+        System.out.printf("%-10s %-26s %-18s %12s %8s  %s%n",
+                "Product ID", "Product", "Category", "Price", "Stock", "Status");
+        System.out.println("-".repeat(88));
+
+        for (Product p : products) {
+            String status;
+            if (p.isOutOfStock()) {
+                status = "Out of Stock";
+            } else if (monitor.isLowStock(p)) {
+                status = "Running Low";
+            } else {
+                status = "Available";
+            }
+
+            System.out.printf("%-10s %-26s %-18s %12s %8d  %s%n",
+                    p.getProductId(), p.getName(), p.getCategory(),
+                    String.format("PHP %.2f", p.getFinalPrice()),
+                    p.getStock(), status);
         }
     }
 
@@ -146,6 +225,7 @@ public class CustomerMenu {
             System.out.println("\n1. Add item");
             System.out.println("2. Edit quantity");
             System.out.println("3. Remove item");
+            System.out.println("4. Search products");
             System.out.println("0. Back");
 
             String choice = ask("Choose an option: ");
@@ -160,6 +240,8 @@ public class CustomerMenu {
             } else if (choice.equals("3")) {
                 removeCartItem();
                 ConsoleUtil.pause(in);
+            } else if (choice.equals("4")) {
+                searchProducts();
             } else {
                 System.out.println("Invalid option.");
                 ConsoleUtil.pause(in);
@@ -192,13 +274,29 @@ public class CustomerMenu {
     }
 
     private void addItemToCart() {
-        printAvailableProducts();
-        String id = ask("Product ID: ");
+        String selectedCategory = chooseCategory();
+        if (selectedCategory == null) return;
+
+        List<Product> categoryProducts = catalog.getByCategory(selectedCategory);
+        if (!showCategoryProducts(selectedCategory, categoryProducts)) return;
+
+        addToCartFrom(categoryProducts, "\nProduct ID to add (or press Enter to cancel): ");
+    }
+
+    /** Asks for a Product ID from the list just shown, then a quantity, and adds it to the cart. */
+    private void addToCartFrom(List<Product> shown, String prompt) {
+        String id = ask(prompt);
         if (id == null || id.isEmpty()) return;
 
-        Product product = catalog.getProduct(id.trim().toUpperCase());
+        Product product = null;
+        for (Product candidate : shown) {
+            if (candidate.getProductId().equalsIgnoreCase(id.trim())) {
+                product = catalog.getProduct(candidate.getProductId());
+                break;
+            }
+        }
         if (product == null) {
-            System.out.println("No product with that ID.");
+            System.out.println("Product not found in the list above.");
             return;
         }
         if (product.isOutOfStock()) {
@@ -282,39 +380,6 @@ public class CustomerMenu {
         }
     }
 
-
-    private void printAvailableProducts() {
-        List<Product> products = Sorter.mergeSort(catalog.getAllProducts(),
-                Comparator.comparing((Product p) -> p.getCategory().toLowerCase())
-                        .thenComparing(Product::getProductId));
-        boolean any = false;
-        for (Product p : products) {
-            if (!p.isOutOfStock()) { any = true; break; }
-        }
-        if (!any) {
-            System.out.println("No products are in stock right now.");
-            return;
-        }
-
-        String currentCategory = null;
-        for (Product p : products) {
-            if (p.isOutOfStock()) continue;
-
-            if (currentCategory == null || !currentCategory.equalsIgnoreCase(p.getCategory())) {
-                currentCategory = p.getCategory();
-                System.out.println("\n" + currentCategory);
-                System.out.printf("%-10s %-24s %12s %8s  %s%n", "Product ID", "Product", "Price", "Stock", "Status");
-                System.out.println("-".repeat(70));
-            }
-
-            String status = monitor.isLowStock(p) ? "Running Low" : "Available";
-            System.out.printf("%-10s %-24s %12s %8d  %s%n",
-                    p.getProductId(), p.getName(), String.format("PHP %.2f", p.getFinalPrice()),
-                    p.getStock(), status);
-        }
-        System.out.println();
-
-    }
 
     private List<CartItem> cartItemsSortedById() {
         List<Product> products = new ArrayList<>();

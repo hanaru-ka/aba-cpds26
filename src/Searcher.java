@@ -44,6 +44,43 @@ public class Searcher {
         return results;
     }
 
+    /**
+     * Linear search for multi-word queries. The query is split into keywords, and a
+     * product matches only if EVERY keyword appears in its ID, name, category, or
+     * special offer (case-insensitive, partial words allowed).
+     */
+    public static List<Product> linearSearchByKeywords(List<Product> list, String query) {
+        List<Product> results = new ArrayList<>();
+
+        if (query == null || query.trim().isEmpty()) {
+            return results;
+        }
+
+        String[] keywords = query.toLowerCase().trim().split("\\s+");
+
+        for (Product product : list) {
+            String offer = product.getSpecialOffer();
+            String searchable = (product.getProductId() + " "
+                    + product.getName() + " "
+                    + product.getCategory() + " "
+                    + (offer == null ? "" : offer)).toLowerCase();
+
+            boolean allFound = true;
+            for (String keyword : keywords) {
+                if (!searchable.contains(keyword)) {
+                    allFound = false;
+                    break;
+                }
+            }
+
+            if (allFound) {
+                results.add(product);
+            }
+        }
+
+        return results;
+    }
+
     public static List<Product> filterByCategory(List<Product> list, String category) {
         List<Product> results = new ArrayList<>();
         category = category.toLowerCase();

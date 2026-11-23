@@ -44,7 +44,6 @@ public class AdminMenu {
                 ConsoleUtil.pause(in);
             } else if (choice.equals("2")) {
                 checkStockBySection();
-                ConsoleUtil.pause(in);
             } else if (choice.equals("3")) {
                 addProduct();
                 ConsoleUtil.pause(in);
@@ -105,27 +104,37 @@ public class AdminMenu {
     // ---------- Check Stock by Section ----------
 
     private void checkStockBySection() {
-        ConsoleUtil.clear();
-        System.out.println("=== STOCK BY CATEGORY ===");
+        while (true) {
+            ConsoleUtil.clear();
+            System.out.println("=== STOCK BY CATEGORY ===");
 
-        List<String> categories = getCategories();
+            List<String> categories = getCategories();
 
-        if (categories.isEmpty()) {
-            System.out.println("No products available.");
-            return;
+            if (categories.isEmpty()) {
+                System.out.println("No products available.");
+                ConsoleUtil.pause(in);
+                return;
+            }
+
+            for (int i = 0; i < categories.size(); i++) {
+                System.out.println((i + 1) + ". " + categories.get(i));
+            }
+            System.out.println("0. Back to Admin Menu");
+
+            int choice = readInt("Choose a category: ", 0, categories.size());
+
+            if (choice == 0) {
+                return;
+            }
+
+            String selectedCategory = categories.get(choice - 1);
+            List<Product> products = catalog.getByCategory(selectedCategory);
+
+            System.out.println("\n=== " + selectedCategory.toUpperCase() + " ===");
+            printProductList(products);
+            ConsoleUtil.pause(in);
+            // Loop back to the category menu.
         }
-
-        for (int i = 0; i < categories.size(); i++) {
-            System.out.println((i + 1) + ". " + categories.get(i));
-        }
-
-        int choice = readInt("Choose a category: ", 1, categories.size());
-
-        String selectedCategory = categories.get(choice - 1);
-        List<Product> products = catalog.getByCategory(selectedCategory);
-
-        System.out.println("\n=== " + selectedCategory.toUpperCase() + " ===");
-        printProductList(products);
     }
 
 
@@ -186,7 +195,6 @@ public class AdminMenu {
             System.out.println(payment + ": " + paymentCounts.get(payment) + " order(s)");
         }
 
-        System.out.println("\nNote: Category sales use the current product category and price because the saved order data stores product IDs and quantities, not historical item prices or categories.");
     }
 
     // ---------- Category Helper ----------
